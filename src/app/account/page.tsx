@@ -43,6 +43,10 @@ export default function AccountPage() {
       );
     };
 
+  const handleRoleChange = (role: "buyer" | "seller") => {
+    setFormValues((prev) => (prev ? { ...prev, role } : prev));
+  };
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!formValues) return;
@@ -166,6 +170,31 @@ export default function AccountPage() {
                     onChange={handleChange("age")}
                     min={0}
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">
+                    권한
+                  </label>
+                  <div className="flex gap-3">
+                    {[
+                      { value: "buyer" as const, label: "구매자" },
+                      { value: "seller" as const, label: "판매자" },
+                    ].map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={
+                          formValues.role === option.value
+                            ? "default"
+                            : "outline"
+                        }
+                        className="flex-1 rounded-full py-4 font-semibold"
+                        onClick={() => handleRoleChange(option.value)}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

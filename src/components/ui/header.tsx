@@ -18,10 +18,20 @@ import { Bell, ChevronDown, Search, ShoppingCart, User, X } from "lucide-react";
 export default function Header() {
   const router = useRouter();
   const navItems = ["오늘의 특가", "로켓프레시", "로켓배송", "쿠팡플레이"];
-  const { isAuthenticated, login } = useUser();
+  const { isAuthenticated, login, signup } = useUser();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [credentials, setCredentials] = useState({ email: "", password: "" });
-  const [loginError, setLoginError] = useState("");
+  const [signupForm, setSignupForm] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    name: "",
+    phone: "",
+    age: "",
+    role: "buyer" as "buyer" | "seller",
+  });
+  const [authError, setAuthError] = useState("");
 
   const handleMyCoupangClick = () => {
     if (isAuthenticated) {
@@ -37,19 +47,69 @@ export default function Header() {
     const result = login(credentials.email, credentials.password);
 
     if (!result.success) {
-      setLoginError(result.message ?? "로그인에 실패했습니다.");
+      setAuthError(result.message ?? "로그인에 실패했습니다.");
       return;
     }
 
-    setLoginError("");
-    setIsLoginOpen(false);
-    setCredentials({ email: "", password: "" });
+    resetAuthState();
     router.push("/account");
   };
 
-  const closeModal = () => {
+  const handleSignupSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (signupForm.password !== signupForm.confirmPassword) {
+      setAuthError("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    if (
+      !signupForm.email ||
+      !signupForm.password ||
+      !signupForm.name ||
+      !signupForm.phone ||
+      !signupForm.age
+    ) {
+      setAuthError("모든 필드를 입력해 주세요.");
+      return;
+    }
+
+    const result = signup({
+      email: signupForm.email,
+      password: signupForm.password,
+      name: signupForm.name,
+      phone: signupForm.phone,
+      age: Number(signupForm.age),
+      role: signupForm.role,
+    });
+
+    if (!result.success) {
+      setAuthError(result.message ?? "회원가입에 실패했습니다.");
+      return;
+    }
+
+    resetAuthState();
+    router.push("/account");
+  };
+
+  const resetAuthState = () => {
     setIsLoginOpen(false);
-    setLoginError("");
+    setAuthMode("login");
+    setAuthError("");
+    setCredentials({ email: "", password: "" });
+    setSignupForm({
+      email: "",
+      password: "",
+      confirmPassword: "",
+      name: "",
+      phone: "",
+      age: "",
+      role: "buyer",
+    });
+  };
+
+  const closeModal = () => {
+    resetAuthState();
   };
 
   return (
@@ -143,10 +203,14 @@ export default function Header() {
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-blue-500">
-                  마이쿠팡 로그인
+                  {authMode === "login"
+                    ? "마이쿠팡 로그인"
+                    : "마이쿠팡 회원가입"}
                 </p>
                 <h3 className="text-xl font-bold text-slate-900">
-                  이메일과 비밀번호를 입력해 주세요
+                  {authMode === "login"
+                    ? "이메일과 비밀번호를 입력해 주세요"
+                    : "필수 정보를 입력해 계정을 만들어 보세요"}
                 </h3>
               </div>
               <button
@@ -157,56 +221,221 @@ export default function Header() {
                 <X className="size-5" />
               </button>
             </div>
-            <form className="space-y-4" onSubmit={handleLoginSubmit}>
-              <div>
-                <label
-                  htmlFor="login-email"
-                  className="mb-1 block text-sm font-semibold text-slate-700"
-                >
-                  이메일
-                </label>
-                <Input
-                  id="login-email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="example@coupang.com"
-                  value={credentials.email}
-                  onChange={(event) =>
-                    setCredentials((prev) => ({
-                      ...prev,
-                      email: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="login-password"
-                  className="mb-1 block text-sm font-semibold text-slate-700"
-                >
-                  비밀번호
-                </label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="비밀번호를 입력하세요"
-                  value={credentials.password}
-                  onChange={(event) =>
-                    setCredentials((prev) => ({
-                      ...prev,
-                      password: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              {loginError && (
-                <p className="text-sm font-medium text-red-500">{loginError}</p>
-              )}
-              <Button className="w-full rounded-full py-5 text-base font-semibold">
-                로그인
-              </Button>
-            </form>
+            {authMode === "login" ? (
+              <form className="space-y-4" onSubmit={handleLoginSubmit}>
+                <div>
+                  <label
+                    htmlFor="login-email"
+                    className="mb-1 block text-sm font-semibold text-slate-700"
+                  >
+                    이메일
+                  </label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="example@coupang.com"
+                    value={credentials.email}
+                    onChange={(event) =>
+                      setCredentials((prev) => ({
+                        ...prev,
+                        email: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="login-password"
+                    className="mb-1 block text-sm font-semibold text-slate-700"
+                  >
+                    비밀번호
+                  </label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="비밀번호를 입력하세요"
+                    value={credentials.password}
+                    onChange={(event) =>
+                      setCredentials((prev) => ({
+                        ...prev,
+                        password: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                {authError && (
+                  <p className="text-sm font-medium text-red-500">
+                    {authError}
+                  </p>
+                )}
+                <Button className="w-full rounded-full py-5 text-base font-semibold">
+                  로그인
+                </Button>
+                <p className="text-center text-sm text-slate-500">
+                  아직 계정이 없다면{" "}
+                  <button
+                    type="button"
+                    className="font-semibold text-blue-600 underline-offset-2 hover:underline"
+                    onClick={() => {
+                      setAuthError("");
+                      setAuthMode("signup");
+                    }}
+                  >
+                    회원가입
+                  </button>{" "}
+                  해 주세요.
+                </p>
+              </form>
+            ) : (
+              <form className="space-y-4" onSubmit={handleSignupSubmit}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">
+                      이메일
+                    </label>
+                    <Input
+                      type="email"
+                      placeholder="example@coupang.com"
+                      value={signupForm.email}
+                      onChange={(event) =>
+                        setSignupForm((prev) => ({
+                          ...prev,
+                          email: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">
+                      비밀번호
+                    </label>
+                    <Input
+                      type="password"
+                      value={signupForm.password}
+                      onChange={(event) =>
+                        setSignupForm((prev) => ({
+                          ...prev,
+                          password: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">
+                      비밀번호 확인
+                    </label>
+                    <Input
+                      type="password"
+                      value={signupForm.confirmPassword}
+                      onChange={(event) =>
+                        setSignupForm((prev) => ({
+                          ...prev,
+                          confirmPassword: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">
+                      이름
+                    </label>
+                    <Input
+                      value={signupForm.name}
+                      onChange={(event) =>
+                        setSignupForm((prev) => ({
+                          ...prev,
+                          name: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">
+                      전화번호
+                    </label>
+                    <Input
+                      value={signupForm.phone}
+                      onChange={(event) =>
+                        setSignupForm((prev) => ({
+                          ...prev,
+                          phone: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">
+                      나이
+                    </label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={signupForm.age}
+                      onChange={(event) =>
+                        setSignupForm((prev) => ({
+                          ...prev,
+                          age: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">
+                      권한 선택
+                    </label>
+                    <div className="flex gap-3">
+                      {[
+                        { value: "buyer", label: "구매자" },
+                        { value: "seller", label: "판매자" },
+                      ].map((option) => (
+                        <Button
+                          key={option.value}
+                          type="button"
+                          variant={
+                            signupForm.role === option.value
+                              ? "default"
+                              : "outline"
+                          }
+                          className="flex-1 rounded-full py-4 font-semibold"
+                          onClick={() =>
+                            setSignupForm((prev) => ({
+                              ...prev,
+                              role: option.value as "buyer" | "seller",
+                            }))
+                          }
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {authError && (
+                  <p className="text-sm font-medium text-red-500">
+                    {authError}
+                  </p>
+                )}
+                <Button className="w-full rounded-full py-5 text-base font-semibold">
+                  회원가입 완료
+                </Button>
+                <p className="text-center text-sm text-slate-500">
+                  이미 계정이 있다면{" "}
+                  <button
+                    type="button"
+                    className="font-semibold text-blue-600 underline-offset-2 hover:underline"
+                    onClick={() => {
+                      setAuthError("");
+                      setAuthMode("login");
+                    }}
+                  >
+                    로그인
+                  </button>{" "}
+                  해 주세요.
+                </p>
+              </form>
+            )}
           </div>
         </div>
       )}

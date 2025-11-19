@@ -2,12 +2,15 @@
 
 import { createContext, useContext, useMemo, useState } from "react";
 
+type UserRole = "buyer" | "seller";
+
 type UserProfile = {
   email: string;
   password: string;
   name: string;
   phone: string;
   age: number;
+  role: UserRole;
 };
 
 type Order = {
@@ -19,16 +22,26 @@ type Order = {
   items: number;
 };
 
-type LoginResult = {
+type AuthResult = {
   success: boolean;
   message?: string;
+};
+
+type SignupPayload = {
+  email: string;
+  password: string;
+  name: string;
+  phone: string;
+  age: number;
+  role: UserRole;
 };
 
 type UserContextValue = {
   user: UserProfile | null;
   orders: Order[];
   isAuthenticated: boolean;
-  login: (email: string, password: string) => LoginResult;
+  login: (email: string, password: string) => AuthResult;
+  signup: (payload: SignupPayload) => AuthResult;
   logout: () => void;
   updateUser: (updates: Partial<UserProfile>) => void;
 };
@@ -66,7 +79,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [orders] = useState(defaultOrders);
 
-  const login = (email: string, password: string): LoginResult => {
+  const login = (email: string, password: string): AuthResult => {
     if (!email || !password) {
       return { success: false, message: "이메일과 비밀번호를 입력해 주세요." };
     }
@@ -77,6 +90,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       name: "홍길동",
       phone: "010-1234-5678",
       age: 32,
+      role: "buyer",
+    });
+
+    return { success: true };
+  };
+
+  const signup = (payload: SignupPayload): AuthResult => {
+    const { email, password, name, phone, age, role } = payload;
+
+    if (!email || !password || !name || !phone || !age || !role) {
+      return { success: false, message: "모든 필드를 입력해 주세요." };
+    }
+
+    setUser({
+      email,
+      password,
+      name,
+      phone,
+      age,
+      role,
     });
 
     return { success: true };
@@ -94,6 +127,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       orders,
       isAuthenticated: Boolean(user),
       login,
+      signup,
       logout,
       updateUser,
     }),
